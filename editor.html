@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ressourcenretter JSON Editor</title>
+<style>
+  body{font-family:Arial,sans-serif;margin:0;padding:20px;background:#f7fafc;color:#111}
+  h1{margin-bottom:16px}
+  textarea{width:100%;height:400px;font-family:monospace;font-size:14px;padding:10px;border-radius:8px;border:1px solid #ccc;resize:vertical}
+  button{margin-top:8px;padding:8px 12px;border:none;border-radius:8px;background:#16a34a;color:white;cursor:pointer;margin-right:8px}
+  .muted{color:#6b7280;margin-top:8px}
+</style>
+</head>
+<body>
+<h1>Ressourcenretter JSON Editor</h1>
+<p class="muted">Bearbeite hier die <code>announcements.json</code>. Änderungen werden lokal gespeichert und können als Datei heruntergeladen werden.</p>
+
+<textarea id="editor"></textarea>
+<div>
+  <button id="load">Laden</button>
+  <button id="save">Speichern</button>
+  <button id="download">Herunterladen</button>
+</div>
+<div id="msg" class="muted"></div>
+
+<script>
+const ANNOUNCEMENTS_PATH = 'announcements.json';
+const editor = document.getElementById('editor');
+const msgEl = document.getElementById('msg');
+
+// Lade JSON aus Datei (fetch) oder localStorage
+async function loadJSON(){
+  try{
+    const res = await fetch(ANNOUNCEMENTS_PATH, {cache:'no-store'});
+    if(!res.ok) throw new Error('Datei nicht gefunden');
+    const data = await res.json();
+    localStorage.setItem('rr_announcements', JSON.stringify(data));
+    editor.value = JSON.stringify(data, null, 2);
+    msgEl.textContent = 'JSON aus Datei geladen.';
+  }catch(e){
+    const stored = localStorage.getItem('rr_announcements');
+    if(stored){
+      editor.value = stored;
+      msgEl.textContent = 'Datei nicht gefunden – lokale Version geladen.';
+    }else{
+      editor.value = '[]';
+      msgEl.textContent = 'Keine Daten gefunden – leeres Array.';
+    }
+  }
+}
+
+// Speichern in localStorage
+function saveJSON(){
+  try{
+    const data = JSON.parse(editor.value);
+    localStorage.setItem('rr_announcements', JSON.stringify(data));
+    msgEl.textContent = 'JSON lokal gespeichert.';
+  }catch(e){
+    msgEl.textContent = 'Fehler: Ungültiges JSON.';
+  }
+}
+
+// Download als Datei
+function downloadJSON(){
+  try{
+    const data = JSON.parse(editor.value);
+    const blob = new Blob([JSON.stringify(data,null,2)], {type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'announcements.json';
+    a.click();
+    URL.revokeObjectURL(url);
+    msgEl.textContent = 'JSON-Datei erstellt.';
+  }catch(e){
+    msgEl.textContent = 'Fehler: Ungültiges JSON.';
+  }
+}
+
+document.getElementById('load').addEventListener('click', loadJSON);
+document.getElementById('save').addEventListener('click', saveJSON);
+document.getElementById('download').addEventListener('click', downloadJSON);
+
+// Auto-Laden beim Start
+loadJSON();
+</script>
+</body>
+</html>
