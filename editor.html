@@ -3,87 +3,115 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Ressourcenretter JSON Editor</title>
+<title>Ressourcenretter Low-Code JSON Editor</title>
 <style>
   body{font-family:Arial,sans-serif;margin:0;padding:20px;background:#f7fafc;color:#111}
   h1{margin-bottom:16px}
-  textarea{width:100%;height:400px;font-family:monospace;font-size:14px;padding:10px;border-radius:8px;border:1px solid #ccc;resize:vertical}
-  button{margin-top:8px;padding:8px 12px;border:none;border-radius:8px;background:#16a34a;color:white;cursor:pointer;margin-right:8px}
+  .announcement{border:1px solid #ccc;background:white;padding:12px;border-radius:8px;margin-bottom:12px}
+  .announcement input, .announcement textarea, .announcement select{width:100%;padding:6px;margin-top:4px;margin-bottom:8px;border-radius:6px;border:1px solid #ccc;font-size:14px}
+  button{padding:6px 10px;border:none;border-radius:6px;background:#16a34a;color:white;cursor:pointer;margin-right:6px;margin-top:4px}
+  .btn-delete{background:#dc2626}
+  .controls{margin-bottom:12px}
   .muted{color:#6b7280;margin-top:8px}
 </style>
 </head>
 <body>
-<h1>Ressourcenretter JSON Editor</h1>
-<p class="muted">Bearbeite hier die <code>announcements.json</code>. Änderungen werden lokal gespeichert und können als Datei heruntergeladen werden.</p>
+<h1>Ressourcenretter Low-Code JSON Editor</h1>
+<p class="muted">Bearbeite die Ankündigungen ohne direktes JSON. Änderungen werden lokal gespeichert und können als Datei exportiert werden.</p>
 
-<textarea id="editor"></textarea>
-<div>
-  <button id="load">Laden</button>
-  <button id="save">Speichern</button>
-  <button id="download">Herunterladen</button>
+<div class="controls">
+  <button id="addAnn">Neue Ankündigung hinzufügen</button>
+  <button id="downloadJson">Als JSON herunterladen</button>
+  <div id="msg" class="muted"></div>
 </div>
-<div id="msg" class="muted"></div>
+
+<div id="editor"></div>
 
 <script>
-const ANNOUNCEMENTS_PATH = 'announcements.json';
 const editor = document.getElementById('editor');
 const msgEl = document.getElementById('msg');
 
-// Lade JSON aus Datei (fetch) oder localStorage
-async function loadJSON(){
-  try{
-    const res = await fetch(ANNOUNCEMENTS_PATH, {cache:'no-store'});
-    if(!res.ok) throw new Error('Datei nicht gefunden');
-    const data = await res.json();
-    localStorage.setItem('rr_announcements', JSON.stringify(data));
-    editor.value = JSON.stringify(data, null, 2);
-    msgEl.textContent = 'JSON aus Datei geladen.';
-  }catch(e){
-    const stored = localStorage.getItem('rr_announcements');
-    if(stored){
-      editor.value = stored;
-      msgEl.textContent = 'Datei nicht gefunden – lokale Version geladen.';
-    }else{
-      editor.value = '[]';
-      msgEl.textContent = 'Keine Daten gefunden – leeres Array.';
-    }
-  }
+// --- Lade vorhandene Ankündigungen ---
+function loadAnnouncements(){
+  const stored = localStorage.getItem('rr_announcements');
+  const data = stored ? JSON.parse(stored) : [];
+  renderAnnouncements(data);
 }
 
-// Speichern in localStorage
-function saveJSON(){
-  try{
-    const data = JSON.parse(editor.value);
-    localStorage.setItem('rr_announcements', JSON.stringify(data));
-    msgEl.textContent = 'JSON lokal gespeichert.';
-  }catch(e){
-    msgEl.textContent = 'Fehler: Ungültiges JSON.';
-  }
+// --- Rendern der Ankündigungen ---
+function renderAnnouncements(data){
+  editor.innerHTML = '';
+  data.forEach((ann,index)=>{
+    const div = document.createElement('div');
+    div.className = 'announcement';
+    div.innerHTML = `
+      <label>Titel:<input type="text" value="${ann.title||''}" data-field="title"></label>
+      <label>Level:
+        <select data-field="level">
+          <option value="klein" ${ann.level==='klein'?'selected':''}>klein</option>
+          <option value="mittel" ${ann.level==='mittel'?'selected':''}>mittel</option>
+          <option value="gross" ${ann.level==='gross'?'selected':''}>groß</option>
+        </select>
+      </label>
+      <label>Datum:<input type="date" value="${ann.date||new Date().toISOString().slice(0,10)}" data-field="date"></label>
+      <label>Zeit:<input type="time" value="${ann.time||'12:30'}" data-field="time"></label>
+      <label>Ort:<input type="text" value="${ann.location||'Private Hütte (siehe WhatsApp)'}" data-field="location"></label>
+      <label>Beschreibung:<textarea rows="2" data-field="description">${ann.description||''}</textarea></label>
+      <label>Hinzugefügt von:<input type="text" value="${ann.addedBy||'Admin'}" data-field="addedBy"></label>
+      <button class="btn-save">Speichern</button>
+      <button class="btn-delete">Löschen</button>
+    `;
+    // Save button
+    div.querySelector('.btn-save').addEventListener('click', ()=>{
+      const updated = {};
+      div.querySelectorAll('[data-field]').forEach(inp=>{
+        updated[inp.dataset.field] = inp.value;
+      });
+      updated.id = ann.id || Date.now().toString();
+      updated.visibleInGroup = true;
+      data[index] = updated;
+      localStorage.setItem('rr_announcements', JSON.stringify(data));
+      msgEl.textContent = 'Ankündigung gespeichert.';
+    });
+    // Delete button
+    div.querySelector('.btn-delete').addEventListener('click', ()=>{
+      if(confirm('Ankündigung wirklich löschen?')){
+        data.splice(index,1);
+        localStorage.setItem('rr_announcements', JSON.stringify(data));
+        renderAnnouncements(data);
+        msgEl.textContent = 'Ankündigung gelöscht.';
+      }
+    });
+    editor.appendChild(div);
+  });
 }
 
-// Download als Datei
-function downloadJSON(){
-  try{
-    const data = JSON.parse(editor.value);
-    const blob = new Blob([JSON.stringify(data,null,2)], {type:'application/json'});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'announcements.json';
-    a.click();
-    URL.revokeObjectURL(url);
-    msgEl.textContent = 'JSON-Datei erstellt.';
-  }catch(e){
-    msgEl.textContent = 'Fehler: Ungültiges JSON.';
-  }
-}
+// --- Neue Ankündigung hinzufügen ---
+document.getElementById('addAnn').addEventListener('click', ()=>{
+  const stored = localStorage.getItem('rr_announcements');
+  const data = stored ? JSON.parse(stored) : [];
+  const newAnn = {id:Date.now().toString(), title:'', level:'klein', date:new Date().toISOString().slice(0,10), time:'12:30', location:'Private Hütte (siehe WhatsApp)', description:'', addedBy:'Admin', visibleInGroup:true};
+  data.push(newAnn);
+  localStorage.setItem('rr_announcements', JSON.stringify(data));
+  renderAnnouncements(data);
+});
 
-document.getElementById('load').addEventListener('click', loadJSON);
-document.getElementById('save').addEventListener('click', saveJSON);
-document.getElementById('download').addEventListener('click', downloadJSON);
+// --- Download als JSON ---
+document.getElementById('downloadJson').addEventListener('click', ()=>{
+  const stored = localStorage.getItem('rr_announcements');
+  if(!stored){ msgEl.textContent = 'Keine Ankündigungen zum Export.'; return; }
+  const blob = new Blob([stored], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'announcements.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  msgEl.textContent = 'JSON-Datei erstellt.';
+});
 
-// Auto-Laden beim Start
-loadJSON();
+// --- Initial Load ---
+loadAnnouncements();
 </script>
 </body>
 </html>
