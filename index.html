@@ -1,0 +1,187 @@
+<!--
+Ressourcenretter / rettung - Single-file HTML page
+Frontend: GitHub Pages
+Backend: InfinityFree (PHP-Skript)
+
+WICHTIG: Ersetze BACKEND_URL unten mit deiner InfinityFree-URL, z. B. https://deinedomain.infinityfreeapp.com/backend_singlefile.php
+-->
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Ressourcenretter / rettung — Info</title>
+  <style>
+    :root{--bg:#f7fafc;--card:#ffffff;--muted:#6b7280;--accent:#16a34a}
+    body{font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; margin:0; background:var(--bg); color:#111}
+    .wrap{max-width:900px;margin:28px auto;padding:20px}
+    header{display:flex;align-items:center;gap:16px}
+    .logo{width:64px;height:64px;border-radius:12px;background:linear-gradient(135deg,#10b98133,#06b6d433);display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--accent)}
+    h1{margin:0;font-size:1.5rem}
+    .card{background:var(--card);padding:16px;border-radius:12px;box-shadow:0 6px 18px rgba(15,23,42,0.06);margin-top:16px}
+    .muted{color:var(--muted)}
+    .levels{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+    .level{flex:1;min-width:180px;padding:12px;border-radius:10px;border:1px solid #e6edf2}
+    .level h3{margin:0 0 8px 0}
+    .feed{margin-top:14px}
+    .announce{padding:10px;border-radius:8px;margin-bottom:8px;border:1px solid #edf2f7}
+    .announce small{color:var(--muted)}
+    .controls{display:flex;gap:8px;align-items:center;margin-top:12px}
+    button{background:var(--accent);color:white;border:none;padding:8px 12px;border-radius:8px;cursor:pointer}
+    input,select,textarea{padding:8px;border-radius:8px;border:1px solid #d1d5db}
+    .admin-panel{margin-top:12px}
+    footer{margin-top:20px;color:var(--muted);font-size:0.9rem}
+    @media (max-width:600px){.levels{flex-direction:column}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="logo">RR</div>
+      <div>
+        <h1>Ressourcenretter / rettung</h1>
+        <div class="muted">Private WhatsApp-Gruppe • 104 Mitglieder • Nur Admins können hinzufügen</div>
+      </div>
+    </header>
+
+    <section class="card">
+      <h2>Worum geht's?</h2>
+      <p class="muted">Wir retten überschüssige / noch gute Produkte und geben sie an Interessierte weiter. Alle Details, Koordination und Bilder sind in der privaten WhatsApp-Gruppe. Diese Seite dient als öffentliche Info-Übersicht für Gruppe, Ort und typische Abläufe.</p>
+
+      <div class="levels">
+        <div class="level">
+          <h3>Kleine Rettung</h3>
+          <p class="muted">Wenn nur wenig Produkte vorhanden sind (ein paar Packungen / einzelne Artikel). Ideal zum spontanen Mitnehmen.</p>
+        </div>
+        <div class="level">
+          <h3>Mittlere Rettung</h3>
+          <p class="muted">Wenn mehrere, aber nicht viele Produkte vorhanden sind. Gut für mehrere Haushalte.</p>
+        </div>
+        <div class="level">
+          <h3>Große Rettung</h3>
+          <p class="muted">Viele Produkte — großes Angebot. Oft schneller abgeholt.</p>
+        </div>
+      </div>
+
+      <div class="muted" style="margin-top:12px">Ort: Private Hütte — die Produkte liegen ab <strong>12:30</strong> bereit. Es gibt <strong>keine festen Termine</strong>. Alle konkreten Infos und Bilder findest du in der privaten WhatsApp-Gruppe.</div>
+
+    </section>
+
+    <section class="card">
+      <h2>Automatischer Feed (Ankündigungen)</h2>
+      <p class="muted">Die Seite lädt Ankündigungen vom Backend. Änderungen werden dort zentral gespeichert.</p>
+
+      <div class="controls">
+        <button id="refreshBtn">Jetzt aktualisieren</button>
+        <div style="margin-left:auto;color:var(--muted)"><small id="lastUpdate">Noch nicht geladen</small></div>
+      </div>
+
+      <div class="feed" id="feed"></div>
+
+      <div class="admin-panel">
+        <h3>Admin: Ankündigung hinzufügen</h3>
+        <div class="muted">(Passwort wird im Backend geprüft)</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+          <input id="adminPass" placeholder="Admin-Passwort" type="password" />
+          <input id="title" placeholder="Titel" style="flex:1" />
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+          <select id="level">
+            <option value="klein">klein</option>
+            <option value="mittel">mittel</option>
+            <option value="gross">groß</option>
+          </select>
+          <input id="date" type="date" />
+          <input id="time" type="time" />
+        </div>
+        <textarea id="desc" rows="3" placeholder="Kurzbeschreibung" style="width:100%;margin-top:8px"></textarea>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <input id="addedBy" placeholder="Admin-Name (z. B. Max)" />
+          <button id="addAnn">Hinzufügen</button>
+        </div>
+        <div id="adminMsg" class="muted" style="margin-top:8px"></div>
+      </div>
+
+    </section>
+
+    <footer>
+      Diese Seite ist eine Hilfsseite zur WhatsApp-Gruppe „Ressourcenretter / rettung" (104 Mitglieder). Nur Admins können Mitglieder hinzufügen — Kommunikation läuft ausschließlich in der privaten Gruppe.
+    </footer>
+  </div>
+
+  <script>
+    // Backend URL (InfinityFree)
+    const BACKEND_URL = 'https://deinedomain.infinityfreeapp.com/backend_singlefile.php'; // ÄNDERN!
+
+    const AUTO_REFRESH_MS = 20000; // 20s
+
+    async function fetchAnnouncements(){
+      try{
+        const res = await fetch(BACKEND_URL, {cache: 'no-store'});
+        if(!res.ok) throw new Error('Backend nicht erreichbar');
+        const data = await res.json();
+        return data;
+      }catch(e){
+        return [];
+      }
+    }
+
+    function renderFeed(items){
+      const feed = document.getElementById('feed');
+      feed.innerHTML = '';
+      if(!items || items.length===0){ feed.innerHTML = '<div class="muted">Keine Ankündigungen.</div>'; return; }
+      items.sort((a,b)=> (a.date+b.time) < (b.date+a.time) ? 1 : -1);
+      items.forEach(it=>{
+        const el = document.createElement('div'); el.className='announce';
+        el.innerHTML = `<strong>${escapeHtml(it.title)}</strong> <small>(${escapeHtml(it.level)})</small><br><small>${escapeHtml(it.date)} ${escapeHtml(it.time)} — ${escapeHtml(it.location||'Private Hütte')}</small><p class="muted">${escapeHtml(it.description)}</p><small class="muted">Hinzugefügt von: ${escapeHtml(it.addedBy||'Admin')}</small>`;
+        feed.appendChild(el);
+      });
+    }
+
+    function escapeHtml(s){ if(!s) return ''; return s.toString().replace(/[&<>"]/g, c=> ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+    async function refresh(){
+      const data = await fetchAnnouncements();
+      renderFeed(data);
+      document.getElementById('lastUpdate').textContent = 'Zuletzt: ' + new Date().toLocaleString();
+    }
+
+    refresh();
+    setInterval(refresh, AUTO_REFRESH_MS);
+
+    document.getElementById('refreshBtn').addEventListener('click', refresh);
+
+    // Admin add announcement
+    document.getElementById('addAnn').addEventListener('click', async ()=>{
+      const pass = document.getElementById('adminPass').value;
+      const title = document.getElementById('title').value.trim();
+      const level = document.getElementById('level').value;
+      const date = document.getElementById('date').value || new Date().toISOString().slice(0,10);
+      const time = document.getElementById('time').value || '12:30';
+      const desc = document.getElementById('desc').value.trim();
+      const addedBy = document.getElementById('addedBy').value.trim() || 'Admin';
+
+      const msgEl = document.getElementById('adminMsg');
+      msgEl.textContent='';
+
+      if(!title){ msgEl.textContent = 'Titel erforderlich.'; return; }
+
+      try{
+        const res = await fetch(BACKEND_URL+'?action=add',{
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({password: pass,title,level,date,time,description:desc,addedBy})
+        });
+        const data = await res.json();
+        if(!data.ok){ msgEl.textContent = 'Fehler: '+(data.error||'unbekannt'); return; }
+        msgEl.textContent = 'Ankündigung hinzugefügt.';
+        document.getElementById('title').value=''; document.getElementById('desc').value=''; document.getElementById('addedBy').value='';
+        refresh();
+      }catch(e){
+        msgEl.textContent = 'Backend-Fehler.';
+      }
+    });
+
+  </script>
+</body>
+</html>
